@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健身日记</title>
+<style>
+  :root {
+    --primary: #2ECC71;
+    --primary-light: #A9DFBF;
+    --primary-dark: #1A9C54;
+    --bg: #F0F8F4;
+    --card: #FFFFFF;
+    --text: #2C3E50;
+    --text-light: #7F8C8D;
+    --danger: #E74C3C;
+    --border: #E8F5E9;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --radius: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  .container { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    padding: 20px 0 24px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header .date-display { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Calendar */
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .calendar-header button {
+    background: var(--primary-light);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--primary-dark);
+    font-weight: 500;
+  }
+  .calendar-header button:hover { background: var(--primary); color: #fff; }
+  .calendar-header .month-label { font-size: 16px; font-weight: 600; }
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+  .calendar-grid .day-header { font-size: 12px; color: var(--text-light); padding: 4px; }
+  .calendar-grid .day-cell {
+    padding: 8px 4px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .calendar-grid .day-cell:hover { background: var(--primary-light); }
+  .calendar-grid .day-cell.today { font-weight: 700; color: var(--primary-dark); }
+  .calendar-grid .day-cell.selected { background: var(--primary); color: #fff; font-weight: 600; }
+  .calendar-grid .day-cell.has-record::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+  .calendar-grid .day-cell.selected.has-record::after { background: #fff; }
+  .calendar-grid .day-cell.other-month { color: #ccc; }
+
+  /* Training */
+  .train-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .train-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text);
+  }
+  .train-tab.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .exercise-list { display: flex; flex-direction: column; gap: 8px; }
+  .exercise-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 12px;
+  }
+  .exercise-item label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; flex: 1; }
+  .exercise-item input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+  }
+  .exercise-item .duration-input {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 13px;
+  }
+  .exercise-item .duration-input:focus { outline: none; border-color: var(--primary); }
+
+  /* Diet */
+  .meal-section { margin-bottom: 16px; }
+  .meal-section:last-child { margin-bottom: 0; }
+  .meal-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .meal-title .remove-meal {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 4px;
+    display: none;
+  }
+  .meal-section.custom .meal-title .remove-meal { display: inline; }
+  .food-list { display: flex; flex-direction: column; gap: 6px; }
+  .food-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border-radius: 10px;
+    font-size: 13px;
+  }
+  .food-item input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+  }
+  .food-item .food-name { flex: 1; }
+  .food-item .food-cal { color: var(--text-light); font-size: 12px; min-width: 60px; text-align: right; }
+  .food-item .weight-input {
+    width: 56px;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 12px;
+    display: none;
+  }
+  .food-item.checked .weight-input { display: block; }
+  .food-item .weight-input:focus { outline: none; border-color: var(--primary); }
+  .add-meal-btn {
+    width: 100%;
+    padding: 10px;
+    border: 2px dashed var(--primary-light);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--primary-dark);
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+  .add-meal-btn:hover { background: var(--primary-light); }
+
+  /* Calorie Summary */
+  .calorie-summary { text-align: center; }
+  .calorie-row {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 16px;
+  }
+  .calorie-box {
+    flex: 1;
+    padding: 12px 8px;
+    margin: 0 6px;
+    border-radius: 12px;
+  }
+  .calorie-box.intake { background: #FFF3E0; }
+  .calorie-box.burned { background: #E3F2FD; }
+  .calorie-box .label { font-size: 12px; color: var(--text-light); }
+  .calorie-box .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .calorie-box.intake .value { color: #F39C12; }
+  .calorie-box.burned .value { color: #3498DB; }
+  .net-calorie {
+    font-size: 14px;
+    color: var(--text-light);
+    margin-bottom: 4px;
+  }
+  .net-calorie .net-value {
+    font-size: 28px;
+    font-weight: 800;
+    display: block;
+    margin-top: 4px;
+  }
+  .net-positive { color: #E67E22; }
+  .net-negative { color: var(--primary-dark); }
+
+  /* Save button */
+  .save-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(46,204,113,0.3);
+    margin-top: 16px;
+  }
+  .save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(46,204,113,0.4); }
+  .save-btn:active { transform: translateY(0); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-60px);
+    background: var(--primary-dark);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Clear data */
+  .footer {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-light);
+    font-size: 12px;
+  }
+  .footer a { color: var(--primary-dark); cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <h1>💪 健身日记</h1>
+  <div class="date-display" id="selectedDateDisplay"></div>
+</div>
+
+<div class="container">
+  <!-- Calendar -->
+  <div class="card">
+    <div class="card-title">📅 日历</div>
+    <div class="calendar-header">
+      <button onclick="prevMonth()">◀</button>
+      <span class="month-label" id="monthLabel"></span>
+      <button onclick="nextMonth()">▶</button>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <!-- Training -->
+  <div class="card">
+    <div class="card-title">🏋️ 训练记录</div>
+    <div class="train-tabs" id="trainTabs"></div>
+    <div class="exercise-list" id="exerciseList"></div>
+  </div>
+
+  <!-- Diet -->
+  <div class="card">
+    <div class="card-title">🍽️ 饮食记录</div>
+    <div id="mealsContainer"></div>
+    <button class="add-meal-btn" onclick="addMeal()">+ 新增一餐</button>
+  </div>
+
+  <!-- Calorie Summary -->
+  <div class="card calorie-summary">
+    <div class="card-title">🔥 热量统计</div>
+    <div class="calorie-row">
+      <div class="calorie-box intake">
+        <div class="label">摄入</div>
+        <div class="value" id="totalIntake">0</div>
+        <div class="label">千卡</div>
+      </div>
+      <div class="calorie-box burned">
+        <div class="label">消耗</div>
+        <div class="value" id="totalBurned">0</div>
+        <div class="label">千卡</div>
+      </div>
+    </div>
+    <div class="net-calorie">
+      当日净热量
+      <span class="net-value" id="netCalorie">0</span>
+      <span>千卡</span>
+    </div>
+  </div>
+
+  <button class="save-btn" onclick="saveRecord()">💾 保存今日记录</button>
+
+  <div class="footer">
+    数据存储在浏览器本地 · <a onclick="clearAllData()">清除所有数据</a>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const STORAGE_KEY = 'fitness_diary_records';
+
+const TRAINING_CATEGORIES = {
+  '手臂': { icon: '💪', exercises: [
+    { name: '哑铃弯举', calPerMin: 5 },
+    { name: '三头臂屈伸', calPerMin: 5 },
+    { name: '锤式弯举', calPerMin: 4 },
+    { name: '绳索下压', calPerMin: 4 },
+  ]},
+  '背部': { icon: '🔙', exercises: [
+    { name: '引体向上', calPerMin: 7 },
+    { name: '杠铃划船', calPerMin: 6 },
+    { name: '坐姿划船', calPerMin: 5 },
+    { name: '高位下拉', calPerMin: 5 },
+  ]},
+  '肩部': { icon: '🤷', exercises: [
+    { name: '哑铃推举', calPerMin: 5 },
+    { name: '侧平举', calPerMin: 4 },
+    { name: '前平举', calPerMin: 4 },
+    { name: '面拉', calPerMin: 3 },
+  ]},
+  '腿部': { icon: '🦵', exercises: [
+    { name: '深蹲', calPerMin: 8 },
+    { name: '腿举', calPerMin: 6 },
+    { name: '腿弯举', calPerMin: 5 },
+    { name: '箭步蹲', calPerMin: 7 },
+  ]},
+  '胸部': { icon: '🏋️', exercises: [
+    { name: '卧推', calPerMin: 7 },
+    { name: '上斜卧推', calPerMin: 6 },
+    { name: '俯卧撑', calPerMin: 6 },
+    { name: '飞鸟', calPerMin: 4 },
+  ]},
+  '有氧': { icon: '🏃', exercises: [
+    { name: '跑步', calPerMin: 10 },
+    { name: '跳绳', calPerMin: 12 },
+    { name: '骑行', calPerMin: 8 },
+    { name: '游泳', calPerMin: 11 },
+  ]},
+};
+
+const FOOD_DATABASE = [
+  { name: '牛奶 250ml', cal: 160, weight: 250, unit: 'ml' },
+  { name: '鸡蛋 1个', cal: 78, weight: 50, unit: 'g' },
+  { name: '鸡胸肉', cal: 165, weight: 100, unit: 'g' },
+  { name: '米饭 1碗', cal: 230, weight: 200, unit: 'g' },
+  { name: '全麦面包 2片', cal: 140, weight: 60, unit: 'g' },
+  { name: '蓝莓 100g', cal: 57, weight: 100, unit: 'g' },
+  { name: '香蕉 1根', cal: 105, weight: 120, unit: 'g' },
+  { name: '燕麦片', cal: 150, weight: 40, unit: 'g' },
+  { name: '红薯 1个', cal: 112, weight: 130, unit: 'g' },
+  { name: '西兰花', cal: 34, weight: 100, unit: 'g' },
+  { name: '三文鱼', cal: 208, weight: 100, unit: 'g' },
+  { name: '酸奶 200ml', cal: 120, weight: 200, unit: 'ml' },
+  { name: '苹果 1个', cal: 95, weight: 180, unit: 'g' },
+  { name: '豆腐 100g', cal: 76, weight: 100, unit: 'g' },
+  { name: '牛肉', cal: 250, weight: 100, unit: 'g' },
+];
+
+const DEFAULT_MEALS = [
+  { name: '🌅 早餐', custom: false },
+  { name: '☀️ 午餐', custom: false },
+  { name: '🌙 晚餐', custom: false },
+];
+
+// ===== STATE =====
+let currentDate = new Date();
+let selectedDate = formatDate(new Date());
+let viewYear, viewMonth;
+let currentTrainCat = Object.keys(TRAINING_CATEGORIES)[0];
+let dayData = {}; // current day's working data
+
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function getDatesWithRecords() {
+  return Object.keys(getRecords());
+}
+
+// ===== CALENDAR =====
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  const label = document.getElementById('monthLabel');
+  const months = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  label.textContent = `${viewYear}年 ${months[viewMonth]}`;
+
+  const todayStr = formatDate(new Date());
+  const datesWithRecords = getDatesWithRecords();
+
+  let html = '';
+  const dayNames = ['日','一','二','三','四','五','六'];
+  dayNames.forEach(d => html += `<div class="day-header">${d}</div>`);
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+  // prev month days
+  for (let i = firstDay - 1; i >= 0; i--) {
+    html += `<div class="day-cell other-month">${daysInPrevMonth - i}</div>`;
+  }
+  // current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let classes = 'day-cell';
+    if (dateStr === todayStr) classes += ' today';
+    if (dateStr === selectedDate) classes += ' selected';
+    if (datesWithRecords.includes(dateStr)) classes += ' has-record';
+    html += `<div class="${classes}" onclick="selectDate('${dateStr}')">${d}</div>`;
+  }
+  // next month days
+  const totalCells = firstDay + daysInMonth;
+  const remaining = (7 - totalCells % 7) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="day-cell other-month">${i}</div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function prevMonth() {
+  viewMonth--;
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  renderCalendar();
+}
+
+function nextMonth() {
+  viewMonth++;
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  renderCalendar();
+}
+
+function selectDate(dateStr) {
+  selectedDate = dateStr;
+  loadDayData();
+  renderAll();
+}
+
+// ===== TRAINING =====
+function renderTraining() {
+  const tabs = document.getElementById('trainTabs');
+  let html = '';
+  Object.keys(TRAINING_CATEGORIES).forEach(cat => {
+    html += `<div class="train-tab ${cat === currentTrainCat ? 'active' : ''}" onclick="switchTrainCat('${cat}')">${TRAINING_CATEGORIES[cat].icon} ${cat}</div>`;
+  });
+  tabs.innerHTML = html;
+
+  const list = document.getElementById('exerciseList');
+  const exercises = TRAINING_CATEGORIES[currentTrainCat].exercises;
+  html = '';
+  exercises.forEach((ex, i) => {
+    const checked = dayData.training?.[currentTrainCat]?.[i]?.checked || false;
+    const duration = dayData.training?.[currentTrainCat]?.[i]?.duration || '';
+    html += `<div class="exercise-item">
+      <label>
+        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleExercise('${currentTrainCat}', ${i}, this.checked)">
+        ${ex.name} <span style="color:var(--text-light);font-size:12px">${ex.calPerMin}千卡/分</span>
+      </label>
+      <input type="number" class="duration-input" placeholder="分钟" min="0" value="${duration}" onchange="setDuration('${currentTrainCat}', ${i}, this.value)">
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function switchTrainCat(cat) {
+  currentTrainCat = cat;
+  renderTraining();
+}
+
+function toggleExercise(cat, idx, checked) {
+  if (!dayData.training) dayData.training = {};
+  if (!dayData.training[cat]) dayData.training[cat] = {};
+  if (!dayData.training[cat][idx]) dayData.training[cat][idx] = {};
+  dayData.training[cat][idx].checked = checked;
+  updateCalories();
+}
+
+function setDuration(cat, idx, value) {
+  if (!dayData.training) dayData.training = {};
+  if (!dayData.training[cat]) dayData.training[cat] = {};
+  if (!dayData.training[cat][idx]) dayData.training[cat][idx] = {};
+  dayData.training[cat][idx].duration = parseInt(value) || 0;
+  updateCalories();
+}
+
+// ===== DIET =====
+function renderMeals() {
+  const container = document.getElementById('mealsContainer');
+  const meals = dayData.meals || DEFAULT_MEALS.map(m => ({ name: m.name, foods: {} }));
+
+  let html = '';
+  meals.forEach((meal, mi) => {
+    const isCustom = mi >= DEFAULT_MEALS.length || meal.custom;
+    html += `<div class="meal-section ${isCustom ? 'custom' : ''}">
+      <div class="meal-title">
+        ${meal.name}
+        ${isCustom ? `<span class="remove-meal" onclick="removeMeal(${mi})">×</span>` : ''}
+      </div>
+      <div class="food-list">`;
+    FOOD_DATABASE.forEach((food, fi) => {
+      const checked = meal.foods?.[fi]?.checked || false;
+      const weight = meal.foods?.[fi]?.weight || '';
+      html += `<div class="food-item ${checked ? 'checked' : ''}">
+        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleFood(${mi}, ${fi}, this.checked)">
+        <span class="food-name">${food.name}</span>
+        <input type="number" class="weight-input" placeholder="${food.weight}${food.unit}" value="${weight}" onchange="setFoodWeight(${mi}, ${fi}, this.value)">
+        <span class="food-cal" id="foodCal_${mi}_${fi}">${checked && weight ? Math.round(food.cal * weight / food.weight) : food.cal}千卡</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function toggleFood(mealIdx, foodIdx, checked) {
+  if (!dayData.meals) dayData.meals = DEFAULT_MEALS.map(m => ({ name: m.name, foods: {} }));
+  if (!dayData.meals[mealIdx]) dayData.meals[mealIdx] = { name: DEFAULT_MEALS[mealIdx]?.name || `加餐${mealIdx - 2}`, foods: {} };
+  if (!dayData.meals[mealIdx].foods) dayData.meals[mealIdx].foods = {};
+  if (!dayData.meals[mealIdx].foods[foodIdx]) dayData.meals[mealIdx].foods[foodIdx] = {};
+  dayData.meals[mealIdx].foods[foodIdx].checked = checked;
+  if (!checked) dayData.meals[mealIdx].foods[foodIdx].weight = '';
+  renderMeals();
+  updateCalories();
+}
+
+function setFoodWeight(mealIdx, foodIdx, value) {
+  if (!dayData.meals) return;
+  if (!dayData.meals[mealIdx]?.foods?.[foodIdx]) return;
+  dayData.meals[mealIdx].foods[foodIdx].weight = parseInt(value) || 0;
+  // update cal display
+  const food = FOOD_DATABASE[foodIdx];
+  const w = parseInt(value) || 0;
+  const calEl = document.getElementById(`foodCal_${mealIdx}_${foodIdx}`);
+  if (calEl && w > 0) calEl.textContent = Math.round(food.cal * w / food.weight) + '千卡';
+  else if (calEl) calEl.textContent = food.cal + '千卡';
+  updateCalories();
+}
+
+function addMeal() {
+  if (!dayData.meals) dayData.meals = DEFAULT_MEALS.map(m => ({ name: m.name, foods: {} }));
+  const num = dayData.meals.length - 2;
+  dayData.meals.push({ name: `🥤 加餐${num > 0 ? num : ''}`, custom: true, foods: {} });
+  renderMeals();
+}
+
+function removeMeal(idx) {
+  dayData.meals.splice(idx, 1);
+  renderMeals();
+  updateCalories();
+}
+
+// ===== CALORIES =====
+function updateCalories() {
+  let intake = 0, burned = 0;
+
+  // Training burned
+  if (dayData.training) {
+    Object.keys(dayData.training).forEach(cat => {
+      Object.keys(dayData.training[cat]).forEach(idx => {
+        const item = dayData.training[cat][idx];
+        if (item.checked && item.duration) {
+          const ex = TRAINING_CATEGORIES[cat]?.exercises[idx];
+          if (ex) burned += ex.calPerMin * item.duration;
+        }
+      });
+    });
+  }
+
+  // Diet intake
+  if (dayData.meals) {
+    dayData.meals.forEach((meal, mi) => {
+      if (!meal.foods) return;
+      Object.keys(meal.foods).forEach(fi => {
+        const item = meal.foods[fi];
+        if (item.checked) {
+          const food = FOOD_DATABASE[parseInt(fi)];
+          if (food) {
+            const w = item.weight || food.weight;
+            intake += Math.round(food.cal * w / food.weight);
+          }
+        }
+      });
+    });
+  }
+
+  document.getElementById('totalIntake').textContent = intake;
+  document.getElementById('totalBurned').textContent = burned;
+
+  const net = intake - burned;
+  const netEl = document.getElementById('netCalorie');
+  netEl.textContent = (net >= 0 ? '+' : '') + net;
+  netEl.className = 'net-value ' + (net >= 0 ? 'net-positive' : 'net-negative');
+}
+
+// ===== SAVE / LOAD =====
+function saveRecord() {
+  const records = getRecords();
+  records[selectedDate] = JSON.parse(JSON.stringify(dayData));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  showToast('✅ 已保存！');
+  renderCalendar();
+}
+
+function loadDayData() {
+  const records = getRecords();
+  const saved = records[selectedDate];
+  if (saved) {
+    dayData = JSON.parse(JSON.stringify(saved));
+  } else {
+    dayData = { training: {}, meals: DEFAULT_MEALS.map(m => ({ name: m.name, foods: {} })) };
+  }
+  // update date display
+  const d = new Date(selectedDate + 'T00:00:00');
+  const weekDays = ['日','一','二','三','四','五','六'];
+  document.getElementById('selectedDateDisplay').textContent =
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 星期${weekDays[d.getDay()]}`;
+}
+
+function renderAll() {
+  renderCalendar();
+  renderTraining();
+  renderMeals();
+  updateCalories();
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ===== CLEAR =====
+function clearAllData() {
+  if (confirm('确定要清除所有健身记录数据吗？此操作不可恢复！')) {
+    localStorage.removeItem(STORAGE_KEY);
+    dayData = { training: {}, meals: DEFAULT_MEALS.map(m => ({ name: m.name, foods: {} })) };
+    renderAll();
+    showToast('🗑️ 数据已清除');
+  }
+}
+
+// ===== INIT =====
+viewYear = new Date().getFullYear();
+viewMonth = new Date().getMonth();
+loadDayData();
+renderAll();
+</script>
+</body>
+</html>
